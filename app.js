@@ -1,7 +1,7 @@
 /* Lift Log — standalone gym tracker. Data lives on this device (localStorage); the coach works by copy/paste with any AI chat. */
 (() => {
 "use strict";
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 
 /* ================= Exercise library ================= */
 // track: "wr" weight+reps · "time" seconds · "dt" distance+time · "wd" weight+distance
@@ -1056,6 +1056,7 @@ document.addEventListener("click", async (ev) => {
     case "reset": S.ui.confirm = "reset"; render(); break;
     case "reset-yes": S.state = { ...defaults(st.units), coachLog: st.coachLog }; S.ui.confirm = null; saveState(); render(); break;
     case "sw-update": swUpdate(); break;
+    case "sw-reload": location.reload(); break;
   }
 });
 document.addEventListener("input", (ev) => {
@@ -1135,7 +1136,12 @@ let updateRequested = false;
 function swUpdate() { if (swReg && swReg.waiting) { updateRequested = true; swReg.waiting.postMessage("skipWaiting"); } }
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   let reloading = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => { if (updateRequested && !reloading) { reloading = true; location.reload(); } });
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    // A new version just took over. Reload now unless a workout is open; then offer it instead.
+    if (updateRequested || !S.state.active) { reloading = true; location.reload(); }
+    else toast("Lift Log was updated. Reload when you finish this workout.", { act: "sw-reload", label: "Reload", sticky: true });
+  });
   navigator.serviceWorker.register("sw.js").then((reg) => {
     swReg = reg;
     const offer = () => { if (reg.waiting && navigator.serviceWorker.controller) toast("A new version of Lift Log is ready.", { act: "sw-update", label: "Update", sticky: true }); };

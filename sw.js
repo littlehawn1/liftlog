@@ -1,12 +1,13 @@
 /* Lift Log service worker: offline app shell + update-on-request.
-   Bump VERSION on every release; the app shows "Update available" and calls skipWaiting when the user taps it. */
-const VERSION = "1.3.0";
+   Bump VERSION on every release; the new version activates on its own and the app reloads into it when no workout is in progress. */
+const VERSION = "1.3.1";
 const SHELL = `liftlog-shell-${VERSION}`;
 const RUNTIME = "liftlog-runtime";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "exercises.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(ASSETS)));
+  // Take over as soon as the new files are cached, so updates apply on their own.
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
