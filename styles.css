@@ -202,6 +202,34 @@ nav.tabs a[aria-current="page"] { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* ---- Standalone additions ---- */
+/* Exercise guide */
+.guide { overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
+.guide-anim { background: var(--sunken); border-radius: 14px; padding: 10px; position: relative; }
+.guide-svg { display: block; width: 100%; height: auto; max-height: 260px; }
+.guide-anim .play { position: absolute; right: 8px; bottom: 8px; }
+.guide h3 { margin-bottom: 6px; }
+.guide ol, .guide ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.guide .muscles { display: flex; gap: 6px; flex-wrap: wrap; }
+.g-body { stroke: var(--ink); fill: none; }
+.g-far { stroke: var(--muted); fill: none; opacity: .75; }
+.g-head, .g-torso { fill: var(--ink); }
+.g-plate { fill: var(--muted); opacity: .55; stroke: var(--ink); stroke-width: 1.5; }
+.g-hub, .g-load { fill: var(--accent); }
+.g-loadline { stroke: var(--accent); }
+.g-cable { stroke: var(--muted); }
+.g-pulley { fill: var(--muted); }
+.g-equip { fill: var(--line); }
+.g-equip-o { fill: none; stroke: var(--line); stroke-width: 4; }
+.g-frame { stroke: var(--line); }
+.g-pad { stroke: var(--muted); }
+.g-pad-c { fill: var(--muted); }
+.g-floor { stroke: var(--line); }
+.pickrow { display: flex; align-items: center; gap: 6px; }
+.pickrow .pick { flex: 1; min-width: 0; }
+.info-btn { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-family: var(--display); font-weight: 700; font-size: 15px; display: inline-grid; place-items: center; }
+.ex-name-btn { background: none; border: 0; padding: 0; text-align: left; color: inherit; display: inline-flex; align-items: center; gap: 8px; }
+.ex-name-btn .info-btn { width: 24px; height: 24px; font-size: 13px; }
+
 .setrows { display: flex; flex-direction: column; gap: 6px; }
 .sethead, .setrow { display: grid; grid-template-columns: 40px minmax(0, 1fr) repeat(var(--cols, 2), minmax(0, 76px)) 44px; gap: 6px; align-items: center; }
 .sethead { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-inline: 2px; }

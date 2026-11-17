@@ -1,7 +1,7 @@
 /* Lift Log — standalone gym tracker. Data lives on this device (localStorage); the coach works by copy/paste with any AI chat. */
 (() => {
 "use strict";
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 
 /* ================= Exercise library ================= */
 // track: "wr" weight+reps · "time" seconds · "dt" distance+time · "wd" weight+distance
@@ -462,7 +462,7 @@ function renderWorkout() {
     const confirmRemove = S.ui.confirm === "rm:" + ei;
     const noteOpen = S.ui.note === ei || it.note;
     return `<section class="ex">
-      <div class="ex-head"><div><div class="kind">${esc(e.muscle)} · ${esc(e.kind)}</div><div class="ex-name">${esc(e.name)}</div>
+      <div class="ex-head"><div><div class="kind">${esc(e.muscle)} · ${esc(e.kind)}</div><button class="ex-name-btn" data-act="info" data-id="${esc(it.ex)}" aria-label="How to do ${esc(e.name)}"><span class="ex-name">${esc(e.name)}</span><span class="info-btn" aria-hidden="true">i</span></button>
         <div class="ex-scheme">${esc(schemeLabel(e))}${e.track === "wr" ? " reps" : ""}${e.fails ? ` · <span style="color:var(--warn)">${e.fails} prior miss${e.fails > 1 ? "es" : ""}</span>` : ""}</div></div>
         ${e.track === "wr" && e.kind !== "bodyweight" ? `<span class="weight-btn num" style="border:0">${fmt(topW)}<small>${S.state.units}${e.kind === "dumbbell" ? " ea" : ""}</small></span>` : ""}</div>
       <div class="setrows" style="--cols:${cols}">
@@ -527,6 +527,7 @@ function renderPlan() {
         </div><span class="note">These settings apply to ${esc(e.name)} in every routine.</span>`;
         return `<div class="item"><div class="top">
           <button class="name" data-act="item-open" data-key="${esc(key)}" aria-expanded="${ed}"><b>${esc(e.name)}</b><span class="sub">${esc(schemeLabel(e))}${weightLabel(e, e.weight) ? " · " + esc(weightLabel(e, e.weight)) : ""}</span></button>
+          <button class="info-btn" data-act="info" data-id="${esc(id)}" aria-label="How to do ${esc(e.name)}">i</button>
           <button class="icon-btn" data-act="item-up" data-r="${esc(r.id)}" data-i="${ii}" aria-label="Move up" ${ii === 0 ? "disabled" : ""}>▲</button>
           <button class="icon-btn" data-act="item-down" data-r="${esc(r.id)}" data-i="${ii}" aria-label="Move down" ${ii === r.items.length - 1 ? "disabled" : ""}>▼</button>
           <button class="icon-btn" data-act="item-rm" data-r="${esc(r.id)}" data-i="${ii}" aria-label="Remove ${esc(e.name)}">✕</button>
@@ -554,13 +555,38 @@ function renderPlan() {
 /* ================= Exercise picker ================= */
 function openPicker(target) { S.ui.picker = { target, q: "" }; S.ui.newEx = null; renderSheet(); setTimeout(() => $("#pick-q")?.focus(), 30); }
 function closePicker() { S.ui.picker = null; S.ui.newEx = null; renderSheet(); }
+function openInfo(id) { S.ui.info = id; renderSheet(); }
+function closeInfo() { S.ui.info = null; window.LiftGuide?.stop(); renderSheet(); }
+function renderInfo(id) {
+  const e = getEx(id), g = window.LiftGuide ? window.LiftGuide.info(id) : null, anim = !!(window.LiftGuide && window.LiftGuide.hasAnim(id));
+  const list = (tag, xs) => `<${tag}>${xs.map((x) => `<li>${esc(x)}</li>`).join("")}</${tag}>`;
+  const body = g ? `
+      ${g.m ? `<div class="muscles"><span class="pill good">Works: ${esc(g.m[0])}</span>${g.m[1] ? `<span class="pill">Also: ${esc(g.m[1])}</span>` : ""}</div>` : ""}
+      ${g.n ? `<div class="msg action" style="align-self:stretch">${esc(g.n)}</div>` : ""}
+      <section><h3>How to do it</h3>${list("ol", g.s)}</section>
+      <section><h3>Form cues</h3>${list("ul", g.c)}</section>
+      <section><h3>Common mistakes</h3>${list("ul", g.x)}</section>
+      <p class="note">General guidance, not medical advice. Stop if something hurts sharply, and get a coach or physical therapist to check your form if you’re unsure.</p>`
+    : `<div class="empty">There’s no guide for this exercise yet. Custom exercises don’t come with one. You can keep your own cues in the exercise’s workout notes.</div>`;
+  return `<div class="sheet-wrap" data-act="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(e.name)} guide">
+    <div class="row"><div class="grow"><div class="kind">${esc(e.muscle)} · ${esc(e.kind)}</div><h2>${esc(e.name)}</h2></div><button class="btn small ghost" data-act="info-close">${S.ui.picker ? "Back" : "Close"}</button></div>
+    <div class="guide">${anim ? `<div class="guide-anim"><div id="guide-fig"></div><button class="btn small play" data-act="anim-toggle" aria-label="Pause or play the animation">Pause</button></div>` : ""}${body}</div>
+  </div></div>`;
+}
 function renderSheet() {
   const host = $("#sheet"); const p = S.ui.picker;
+  if (S.ui.info) {
+    host.innerHTML = renderInfo(S.ui.info);
+    const playing = window.LiftGuide.mount($("#guide-fig"), S.ui.info);
+    const pb = $('[data-act="anim-toggle"]'); if (pb) pb.textContent = playing ? "Pause" : "Play";
+    return;
+  }
   if (!p) { host.innerHTML = ""; return; }
   if (!$("#pick-q")) host.innerHTML = `<div class="sheet-wrap" data-act="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Add exercise">
       <div class="row"><h2 class="grow">Add exercise</h2><button class="btn small ghost" data-act="sheet-close">Close</button></div>
       <input type="search" id="pick-q" placeholder="Search, or type a new exercise name" autocomplete="off" aria-label="Search exercises">
       <div class="list" id="pick-list"></div></div></div>`;
+  const q = $("#pick-q"); if (q && q.value !== p.q) q.value = p.q;
   renderPickList();
 }
 function renderPickList() {
@@ -569,7 +595,7 @@ function renderPickList() {
   const hits = all.filter((m) => !q || m.name.toLowerCase().includes(q) || m.muscle.toLowerCase().includes(q) || m.kind.includes(q));
   const groups = {}; for (const m of hits) (groups[m.muscle] = groups[m.muscle] || []).push(m);
   let html = "";
-  for (const mu of MUSCLES) if (groups[mu]) html += `<div class="grp">${esc(mu)}</div>` + groups[mu].map((m) => `<button class="pick" data-act="pick-ex" data-id="${esc(m.id)}"><span>${esc(m.name)}</span><span class="kind">${esc(m.track === "wr" ? m.kind : TRACKS[m.track])}</span></button>`).join("");
+  for (const mu of MUSCLES) if (groups[mu]) html += `<div class="grp">${esc(mu)}</div>` + groups[mu].map((m) => `<div class="pickrow"><button class="pick" data-act="pick-ex" data-id="${esc(m.id)}"><span>${esc(m.name)}</span><span class="kind">${esc(m.track === "wr" ? m.kind : TRACKS[m.track])}</span></button><button class="info-btn" data-act="info" data-id="${esc(m.id)}" aria-label="How to do ${esc(m.name)}">i</button></div>`).join("");
   if (q && !all.some((m) => m.name.toLowerCase() === q)) {
     const ne = S.ui.newEx || { kind: "machine", muscle: "Other", track: "wr" };
     html += `<div class="grp">Create “${esc(p.q.trim())}”</div><div class="grid-fields">
@@ -978,7 +1004,10 @@ document.addEventListener("click", async (ev) => {
       S.ui.reply = ""; S.ui.parsed = null; location.hash = "#coach"; break;
     }
     case "add-ex": openPicker(b.dataset.target); break;
-    case "sheet-bg": case "sheet-close": closePicker(); break;
+    case "sheet-bg": case "sheet-close": if (S.ui.info) closeInfo(); else closePicker(); break;
+    case "info": ev.stopPropagation(); openInfo(b.dataset.id); break;
+    case "info-close": closeInfo(); break;
+    case "anim-toggle": { const fig = $("#guide-fig"); if (fig && fig._toggle) b.textContent = fig._toggle() ? "Pause" : "Play"; break; }
     case "pick-ex": { const t = S.ui.picker.target; closePicker(); addExerciseTo(t, b.dataset.id); render(); break; }
     case "pick-new": { const t = S.ui.picker.target; const id = addCustom(S.ui.picker.q.trim(), $("#ne-kind")?.value, $("#ne-muscle")?.value, $("#ne-track")?.value); closePicker(); addExerciseTo(t, id); render(); break; }
     case "r-open": S.ui.openRoutine = S.ui.openRoutine === b.dataset.r ? null : b.dataset.r; S.ui.openItem = null; S.ui.confirm = null; render(); break;
@@ -1085,7 +1114,7 @@ document.addEventListener("change", (ev) => {
 });
 document.addEventListener("focusin", (ev) => { const t = ev.target; if (t.dataset && t.dataset.f) t.dataset.old = t.value; });
 document.addEventListener("keydown", (ev) => {
-  if (ev.key === "Escape" && S.ui.picker) closePicker();
+  if (ev.key === "Escape" && S.ui.info) closeInfo(); else if (ev.key === "Escape" && S.ui.picker) closePicker();
   if (ev.key === "Enter" && ev.target.tagName === "LABEL" && ev.target.htmlFor) $("#" + ev.target.htmlFor)?.click();
 });
 function changeUnits(nu) {

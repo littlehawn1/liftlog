@@ -10,6 +10,7 @@ A gym workout tracker that runs on its own, without claude.ai. It installs from 
 - **Plan**: routines rotate in order. You can edit them and change sets, rep range, weight and increment for each exercise.
 - **Progress**: weekly working sets per muscle, a chart per exercise (estimated 1RM, best time or distance), personal records with a "New record" callout after a workout, Lose It food import and a bodyweight log.
 - **Coach (copy / paste)**: the app builds a prompt with your data and question. You send it to Claude (or any AI chat), then paste or share the answer back. Changes in the answer's ```` ```liftlog ```` block are listed for approval, with undo.
+- **Exercise guide**: every built-in exercise has an animated form demo, muscles worked, step-by-step instructions, form cues and common mistakes. Open it by tapping an exercise's name or its **i** button.
 - **Backup / restore** as a JSON file. Backups from the claude.ai version of Lift Log restore here too.
 
 ## Files
@@ -19,6 +20,7 @@ A gym workout tracker that runs on its own, without claude.ai. It installs from 
 | `index.html` | App shell |
 | `styles.css` | Styles (orange-over-grey palette, light and dark) |
 | `app.js` | All app logic |
+| `exercises.js` | Exercise guide text and the animated form demos |
 | `sw.js` | Service worker: offline cache and update-on-request |
 | `manifest.webmanifest` | Install info, icons, share target |
 | `icons/` | App icons |
