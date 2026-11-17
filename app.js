@@ -1,7 +1,7 @@
 /* Lift Log — standalone gym tracker. Data lives on this device (localStorage); the coach works by copy/paste with any AI chat. */
 (() => {
 "use strict";
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 /* ================= Exercise library ================= */
 // track: "wr" weight+reps · "time" seconds · "dt" distance+time · "wd" weight+distance

@@ -19,6 +19,7 @@ img { max-width: 100%; }
   --good: #b9560f;
   --warn: #6b6e72;
   --scrim: rgba(10, 12, 14, .45);
+  --fig-1: #e4e6e8; --fig-2: #9a9ea3; --fig-line: #7d8186; --hot-1: #ffa25a; --hot-2: #d4530b;
   --plate-red: #2b2d30; --plate-blue: #2b2d30; --plate-yellow: #45484c;
   --plate-green: #5d6065; --plate-white: #8a8d91; --plate-black: #a7a9ac;
   --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
@@ -29,11 +30,11 @@ img { max-width: 100%; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #1c1d1f; --surface: #27292c; --sunken: #18191b; --ink: #eeeff0; --muted: #a7a9ac;
   --line: #3a3d41; --accent: #f47a20; --accent-ink: #1d1e20; --accent-soft: #42301f;
-  --good: #f7924a; --warn: #a7a9ac; --scrim: rgba(0, 0, 0, .6); color-scheme: dark; } }
+  --good: #f7924a; --warn: #a7a9ac; --scrim: rgba(0, 0, 0, .6); --fig-1: #c9ccd0; --fig-2: #6f7378; --fig-line: #4a4d52; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #1c1d1f; --surface: #27292c; --sunken: #18191b; --ink: #eeeff0; --muted: #a7a9ac;
   --line: #3a3d41; --accent: #f47a20; --accent-ink: #1d1e20; --accent-soft: #42301f;
-  --good: #f7924a; --warn: #a7a9ac; --scrim: rgba(0, 0, 0, .6); color-scheme: dark; }
+  --good: #f7924a; --warn: #a7a9ac; --scrim: rgba(0, 0, 0, .6); --fig-1: #c9ccd0; --fig-2: #6f7378; --fig-line: #4a4d52; color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -211,6 +212,10 @@ nav.tabs a[aria-current="page"] { color: var(--accent); }
 .guide ol, .guide ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .guide .muscles { display: flex; gap: 6px; flex-wrap: wrap; }
 .g-body { stroke: var(--ink); fill: none; }
+.g-skin { fill: url(#gfig); stroke: var(--fig-line); stroke-width: 0.8; stroke-linejoin: round; }
+.g-hot { fill: url(#ghot); stroke: var(--hot-2); stroke-width: 0.6; stroke-linejoin: round; }
+.g-mus { fill: url(#gfig); stroke: var(--fig-line); stroke-width: 0.7; }
+.g-farg { opacity: 0.5; }
 .g-far { stroke: var(--muted); fill: none; opacity: .75; }
 .g-head, .g-torso { fill: var(--ink); }
 .g-plate { fill: var(--muted); opacity: .55; stroke: var(--ink); stroke-width: 1.5; }

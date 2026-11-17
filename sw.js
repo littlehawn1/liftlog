@@ -1,6 +1,6 @@
 /* Lift Log service worker: offline app shell + update-on-request.
    Bump VERSION on every release; the app shows "Update available" and calls skipWaiting when the user taps it. */
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const SHELL = `liftlog-shell-${VERSION}`;
 const RUNTIME = "liftlog-runtime";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "exercises.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];

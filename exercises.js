@@ -278,28 +278,106 @@ function drawEq(e, J) {
     default: return "";
   }
 }
-function drawSide(J, eq) {
-  const back = [];
-  if (J.knee2) back.push(poly([J.hip, J.knee2, J.ankle2, J.toe2], 8, "g-far"));
-  if (J.elbow2) back.push(poly([J.shoulder, J.elbow2, J.wrist2], 6.5, "g-far"));
-  const body = [
-    poly([J.toe, J.ankle, J.knee, J.hip], 9, "g-body"),
-    line(J.hip, J.shoulder, 13, "g-body"),
-    line(J.shoulder, J.neck, 7, "g-body"),
-    circ(J.head, L.head, "g-head"),
-    poly([J.shoulder, J.elbow, J.wrist], 7, "g-body"),
-  ];
+/* Muscles highlighted per exercise (orange on the figure). */
+const HL = {
+  squat: "quads glutes", front_squat: "quads glutes", deadlift: "glutes hams lowback back", trap_dl: "quads glutes hams", rdl: "hams glutes",
+  hip_thrust: "glutes hams", leg_press: "quads glutes", hack_squat: "quads", leg_ext: "quads", leg_curl: "hams", seated_leg_curl: "hams",
+  goblet: "quads glutes", bulgarian: "quads glutes", lunge: "quads glutes", hip_abd: "glutes", calf_raise: "calves", seated_calf: "calves",
+  bench: "chest triceps delts", incline_bench: "chest delts triceps", db_bench: "chest triceps", incline_db: "chest delts", chest_press: "chest triceps",
+  pec_deck: "chest", cable_fly: "chest", dip: "chest triceps", pushup: "chest triceps", hrpu: "chest triceps",
+  row: "back biceps", pullup: "back biceps", chinup: "back biceps", lat_pulldown: "back biceps", seated_row: "back biceps", db_row: "back biceps",
+  tbar_row: "back biceps", machine_row: "back biceps", straight_arm: "back", back_ext: "lowback glutes",
+  ohp: "delts triceps", db_shoulder: "delts triceps", machine_shoulder: "delts triceps", lateral: "delts", cable_lateral: "delts", rear_delt: "delts back",
+  face_pull: "delts back", shrug: "traps", bb_curl: "biceps forearms", db_curl: "biceps", hammer: "biceps forearms", cable_curl: "biceps", preacher: "biceps",
+  pushdown: "triceps", oh_ext: "triceps", skull: "triceps", close_bench: "triceps chest", hang_leg: "abs", cable_crunch: "abs", ab_wheel: "abs", plank: "abs",
+  dead_hang: "forearms back", farmer: "forearms traps", sled_push: "quads glutes calves", sdc: "quads glutes hams", run2mi: "quads hams calves",
+  run: "quads hams calves", sprints: "hams glutes quads", row_erg: "back quads", bike: "quads", stairs: "glutes quads",
+};
+const PRONE = new Set(["leg_curl"]);
+
+/* Shaped body: slim limb bases with individual muscle bellies on top. Muscles an exercise works are orange.
+   "Front" of the torso and legs is the right normal of a segment pointing up the body (f flips it for face-down poses). */
+function geo(A, B) { const dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy) || 1; return { n: [-dy / len, dx / len], ang: Math.atan2(dy, dx) * 180 / Math.PI, len }; }
+const off = (P, n, s) => [P[0] + n[0] * s, P[1] + n[1] * s];
+const ctrl = (P0, T, P2) => [2 * T[0] - (P0[0] + P2[0]) / 2, 2 * T[1] - (P0[1] + P2[1]) / 2];
+function limb(A, B, wA, wM, wB, cls) {
+  const { n } = geo(A, B); const M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+  const a1 = off(A, n, wA), m1 = off(M, n, wM), b1 = off(B, n, wB), a2 = off(A, n, -wA), m2 = off(M, n, -wM), b2 = off(B, n, -wB);
+  return `<path d="M${P(a1)} Q${P(ctrl(a1, m1, b1))} ${P(b1)} L${P(b2)} Q${P(ctrl(b2, m2, a2))} ${P(a2)} Z" class="${cls}"/>`;
+}
+function ell(A, B, t, side, rx, ry, cls) {
+  const { n, ang } = geo(A, B); const c = off([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t], n, side);
+  return `<ellipse cx="${f1(c[0])}" cy="${f1(-c[1])}" rx="${rx}" ry="${ry}" transform="rotate(${f1(-ang)} ${f1(c[0])} ${f1(-c[1])})" class="${cls}"/>`;
+}
+const mus = (hot, k) => (hot.has(k) ? "g-hot" : "g-mus");
+function legParts(hip, knee, ankle, toe, hot, f) {
+  return [
+    limb(knee, hip, 5.6, 7.6, 8.8, "g-skin"), limb(ankle, knee, 3, 4.6, 5.2, "g-skin"), limb(ankle, toe, 3.6, 3.2, 2.4, "g-skin"),
+    ell(knee, hip, 0.47, f * 3.4, 15.5, 5.4, mus(hot, "hams")),
+    ell(knee, hip, 0.5, -f * 2.8, 18, 6.6, mus(hot, "quads")),
+    ell(ankle, knee, 0.64, f * 2.6, 11, 4.6, mus(hot, "calves")),
+    circ(knee, 4.4, "g-skin"),
+  ].join("");
+}
+function armParts(sh, el, wr, hot) {
+  return [
+    limb(sh, el, 5, 4.6, 3.8, "g-skin"), limb(el, wr, 4, 3.6, 2.6, "g-skin"),
+    ell(sh, el, 0.46, -2.4, 11.5, 4.3, mus(hot, "triceps")),
+    ell(sh, el, 0.56, 2.3, 10.5, 4.3, mus(hot, "biceps")),
+    ell(el, wr, 0.33, 0.8, 9.5, 3.7, mus(hot, "forearms")),
+    circ(el, 3.4, "g-skin"), circ(wr, 2.8, "g-skin"),
+    ell(sh, el, 0.08, 0, 8.2, 7.2, mus(hot, "delts")),
+  ].join("");
+}
+function drawSide(J, spec, id) {
+  const eq = spec.eq || [], hot = new Set((HL[id] || "").split(" ").filter(Boolean)), f = PRONE.has(id) ? -1 : 1;
   const UNDER = ["rect", "line", "circle", "seat", "pad", "platform", "roll", "landmine", "plate"];
-  const under = (eq || []).filter((e) => UNDER.includes(e.t)).map((e) => drawEq(e, J)).join("");
-  const over = (eq || []).filter((e) => !UNDER.includes(e.t)).map((e) => drawEq(e, J)).join("") + (eq || []).filter((e) => e.t === "plate").map((e) => drawEq({ ...e, t: "hub" }, J)).join("");
-  return under + back.join("") + body.join("") + over;
+  const under = eq.filter((e) => UNDER.includes(e.t)).map((e) => drawEq(e, J)).join("");
+  const over = eq.filter((e) => !UNDER.includes(e.t)).map((e) => drawEq(e, J)).join("") + eq.filter((e) => e.t === "plate").map((e) => drawEq({ ...e, t: "hub" }, J)).join("");
+  const o = [under];
+  if (J.knee2) o.push(`<g class="g-farg">${legParts(J.hip, J.knee2, J.ankle2, J.toe2, hot, f)}</g>`);
+  if (J.elbow2) o.push(`<g class="g-farg">${armParts(J.shoulder, J.elbow2, J.wrist2, hot)}</g>`);
+  o.push(legParts(J.hip, J.knee, J.ankle, J.toe, hot, f));
+  const { n } = geo(J.hip, J.shoulder);
+  o.push(circ(off(J.hip, n, f * 4.6), 8.8, mus(hot, "glutes")));
+  o.push(limb(J.hip, J.shoulder, 9, 9.4, 10.6, "g-skin"));
+  o.push(ell(J.hip, J.shoulder, 0.24, f * 5, 10, 4.2, mus(hot, "lowback")));
+  o.push(ell(J.hip, J.shoulder, 0.63, f * 5.6, 17, 5.4, mus(hot, "back")));
+  o.push(ell(J.hip, J.shoulder, 0.37, -f * 5.6, 13.5, 4, mus(hot, "abs")));
+  o.push(ell(J.hip, J.shoulder, 0.8, -f * 6.2, 9.5, 5.6, mus(hot, "chest")));
+  o.push(limb(J.shoulder, J.neck, 5, 4.6, 4.2, "g-skin"));
+  o.push(ell(J.shoulder, J.neck, 0.25, f * 3.4, 7.5, 3.6, mus(hot, "traps")));
+  o.push(circ(J.head, 9, "g-skin"));
+  o.push(armParts(J.shoulder, J.elbow, J.wrist, hot));
+  o.push(over);
+  return o.join("");
 }
-function drawFront(J, eq) {
-  const under = (eq || []).filter((e) => ["fseat"].includes(e.t)).map((e) => drawEq(e, J)).join("");
-  const over = (eq || []).filter((e) => !["fseat"].includes(e.t)).map((e) => drawEq(e, J)).join("");
-  const limbs = ["R", "L"].map((s) => poly([J["to" + s], J["an" + s], J["kn" + s], J["hip" + s]], 9, "g-body") + poly([J["sh" + s], J["el" + s], J["wr" + s]], 7, "g-body")).join("");
-  return under + limbs + line(J.hipL, J.hipR, 10, "g-body") + `<path d="M${P(J.hipL)} L${P(J.shL)} L${P(J.shR)} L${P(J.hipR)} Z" class="g-torso"/>` + line(J.neck, [0, J.head[1] - 6], 7, "g-body") + circ(J.head, L.head, "g-head") + over;
+function drawFront(J, spec, id) {
+  const eq = spec.eq || [], hot = new Set((HL[id] || "").split(" ").filter(Boolean));
+  const under = eq.filter((e) => e.t === "fseat").map((e) => drawEq(e, J)).join("");
+  const over = eq.filter((e) => e.t !== "fseat").map((e) => drawEq(e, J)).join("");
+  const hy = J.hipC[1], sy = J.shR[1], o = [under];
+  for (const s of ["R", "L"]) {
+    const hip = J["hip" + s], kn = J["kn" + s], an = J["an" + s], m = s === "R" ? 1 : -1;
+    o.push(limb(hip, kn, 9, 8.4, 5.4, "g-skin"), limb(kn, an, 5, 5.6, 3, "g-skin"), limb(an, J["to" + s], 3.4, 3, 2.4, "g-skin"));
+    o.push(ell(hip, kn, 0.48, 0, 15, 6.8, mus(hot, "quads")), ell(kn, an, 0.3, -m * 1.4, 9, 3.4, "g-mus"), circ(kn, 4.2, "g-skin"));
+    if (hot.has("glutes")) o.push(ell([hip[0] + m * 6, hy + 6], [hip[0] + m * 8, hy - 12], 0.4, 0, 9, 5, "g-hot"));
+  }
+  const t = [[-11.5, hy - 2], [-13, hy + 18], [-18.5, sy - 8], [-19.5, sy + 2], [19.5, sy + 2], [18.5, sy - 8], [13, hy + 18], [11.5, hy - 2]];
+  o.push(`<path d="M${t.map(P).join(" L")} Z" class="g-skin"/>`);
+  for (const m of [1, -1]) {
+    o.push(ell([m * 14, sy - 30], [m * 18, sy - 6], 0.5, 0, 12, 3.8, mus(hot, "back")));
+    o.push(`<ellipse cx="${m * 8.6}" cy="${f1(-(sy - 7))}" rx="9.4" ry="6.2" class="${mus(hot, "chest")}"/>`);
+  }
+  for (let r = 0; r < 3; r++) for (const m of [1, -1]) o.push(`<rect x="${m > 0 ? 0.8 : -6.8}" y="${f1(-(sy - 16 - r * 8.5))}" width="6" height="7.4" rx="2.4" class="${mus(hot, "abs")}"/>`);
+  o.push(`<path d="M${P([-5.5, sy + 7])} L${P([-18, sy + 1.5])} L${P([18, sy + 1.5])} L${P([5.5, sy + 7])} Z" class="${mus(hot, "traps")}"/>`);
+  o.push(limb([0, sy + 2], [0, J.head[1] - 7], 5.2, 4.8, 4.4, "g-skin"));
+  o.push(circ(J.head, 9, "g-skin"));
+  for (const s of ["R", "L"]) o.push(armParts(J["sh" + s], J["el" + s], J["wr" + s], hot));
+  o.push(over);
+  return o.join("");
 }
+const DEFS = `<defs><linearGradient id="gfig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--fig-1,#d7d9dc)"/><stop offset="1" style="stop-color:var(--fig-2,#8f9398)"/></linearGradient><linearGradient id="ghot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--hot-1,#ff9a4d)"/><stop offset="1" style="stop-color:var(--hot-2,#d9550c)"/></linearGradient></defs>`;
 function solve(p) { return p.view === "front" ? solveFront(p) : solveSide(p); }
 function frameAt(spec, tSec) {
   const fr = spec.frames, n = fr.length, dur = spec.dur || (n > 2 ? 0.5 : 1.25);
@@ -339,10 +417,10 @@ function mount(el, id) {
   const b = bounds(spec), padX = 10, w = b.x1 - b.x0 + padX * 2, h = b.y1 - b.y0 + 20;
   const vb = `${f1(b.x0 - padX)} ${f1(-b.y1 - 10)} ${f1(w)} ${f1(h)}`;
   const floor = spec.noFloor ? "" : `<line x1="${f1(b.x0 - padX)}" y1="0" x2="${f1(b.x1 + padX)}" y2="0" class="g-floor" stroke-width="2"/>`;
-  el.innerHTML = `<svg viewBox="${vb}" class="guide-svg" role="img" aria-label="Animated form demo">${floor}<g class="g-fig"></g></svg>`;
+  el.innerHTML = `<svg viewBox="${vb}" class="guide-svg" role="img" aria-label="Animated form demo">${DEFS}${floor}<g class="g-fig"></g></svg>`;
   const g = el.querySelector(".g-fig");
   const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const paint = (t) => { const p = frameAt(spec, t); const J = solve(p); g.innerHTML = p.view === "front" ? drawFront(J, spec.eq) : drawSide(J, spec.eq); };
+  const paint = (t) => { const p = frameAt(spec, t); const J = solve(p); g.innerHTML = p.view === "front" ? drawFront(J, spec, id) : drawSide(J, spec, id); };
   let start = null, paused = !!reduce, pausedAt = reduce ? (spec.dur || 1.25) * 0.5 + 0.25 : 0;
   const tick = (ts) => { if (start == null) start = ts; paint((ts - start) / 1000); raf = requestAnimationFrame(tick); };
   if (paused) paint(pausedAt); else raf = requestAnimationFrame(tick);
@@ -350,6 +428,6 @@ function mount(el, id) {
   return !paused;
 }
 function stop() { if (raf) cancelAnimationFrame(raf); raf = null; }
-function snapshot(id, t) { const spec = A[id]; if (!spec) return ""; const J = solve(frameAt(spec, t)); return spec.frames[0].view === "front" ? drawFront(J, spec.eq) : drawSide(J, spec.eq); }
-window.LiftGuide = { info, hasAnim, mount, stop, snapshot, bounds: (id) => A[id] && bounds(A[id]), ids: () => Object.keys(G) };
+function snapshot(id, t) { const spec = A[id]; if (!spec) return ""; const J = solve(frameAt(spec, t)); return spec.frames[0].view === "front" ? drawFront(J, spec, id) : drawSide(J, spec, id); }
+window.LiftGuide = { info, hasAnim, mount, stop, snapshot, defs: DEFS, bounds: (id) => A[id] && bounds(A[id]), ids: () => Object.keys(G) };
 })();
