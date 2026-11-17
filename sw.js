@@ -1,6 +1,6 @@
 /* Lift Log service worker: offline app shell + update-on-request.
    Bump VERSION on every release; the app shows "Update available" and calls skipWaiting when the user taps it. */
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 const SHELL = `liftlog-shell-${VERSION}`;
 const RUNTIME = "liftlog-runtime";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "exercises.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
@@ -24,6 +24,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.origin === location.origin && url.pathname.includes("/videos/")) return; // videos stream from the network (range requests)
   if (url.origin === location.origin) {
     // App shell: cache first (the shell version controls updates), network fallback.
     e.respondWith((async () => {

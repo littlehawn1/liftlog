@@ -206,6 +206,11 @@ nav.tabs a[aria-current="page"] { color: var(--accent); }
 /* Exercise guide */
 .guide { overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
 .guide-anim { background: var(--sunken); border-radius: 14px; padding: 10px; position: relative; }
+.guide-video { background: var(--sunken); border-radius: 14px; overflow: hidden; }
+.guide-video video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--sunken); }
+.video-soon { display: flex; flex-direction: column; gap: 4px; padding: 18px 16px; }
+.video-soon b { font-family: var(--display); font-size: 18px; text-transform: uppercase; }
+.video-soon span { color: var(--muted); font-size: 14px; }
 .guide-svg { display: block; width: 100%; height: auto; max-height: 260px; }
 .guide-anim .play { position: absolute; right: 8px; bottom: 8px; }
 .guide h3 { margin-bottom: 6px; }

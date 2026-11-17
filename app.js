@@ -1,7 +1,7 @@
 /* Lift Log — standalone gym tracker. Data lives on this device (localStorage); the coach works by copy/paste with any AI chat. */
 (() => {
 "use strict";
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 
 /* ================= Exercise library ================= */
 // track: "wr" weight+reps · "time" seconds · "dt" distance+time · "wd" weight+distance
@@ -556,9 +556,9 @@ function renderPlan() {
 function openPicker(target) { S.ui.picker = { target, q: "" }; S.ui.newEx = null; renderSheet(); setTimeout(() => $("#pick-q")?.focus(), 30); }
 function closePicker() { S.ui.picker = null; S.ui.newEx = null; renderSheet(); }
 function openInfo(id) { S.ui.info = id; renderSheet(); }
-function closeInfo() { S.ui.info = null; window.LiftGuide?.stop(); renderSheet(); }
+function closeInfo() { S.ui.info = null; renderSheet(); }
 function renderInfo(id) {
-  const e = getEx(id), g = window.LiftGuide ? window.LiftGuide.info(id) : null, anim = !!(window.LiftGuide && window.LiftGuide.hasAnim(id));
+  const e = getEx(id), g = window.LiftGuide ? window.LiftGuide.info(id) : null, builtIn = !e.custom;
   const list = (tag, xs) => `<${tag}>${xs.map((x) => `<li>${esc(x)}</li>`).join("")}</${tag}>`;
   const body = g ? `
       ${g.m ? `<div class="muscles"><span class="pill good">Works: ${esc(g.m[0])}</span>${g.m[1] ? `<span class="pill">Also: ${esc(g.m[1])}</span>` : ""}</div>` : ""}
@@ -570,15 +570,19 @@ function renderInfo(id) {
     : `<div class="empty">There’s no guide for this exercise yet. Custom exercises don’t come with one. You can keep your own cues in the exercise’s workout notes.</div>`;
   return `<div class="sheet-wrap" data-act="sheet-bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(e.name)} guide">
     <div class="row"><div class="grow"><div class="kind">${esc(e.muscle)} · ${esc(e.kind)}</div><h2>${esc(e.name)}</h2></div><button class="btn small ghost" data-act="info-close">${S.ui.picker ? "Back" : "Close"}</button></div>
-    <div class="guide">${anim ? `<div class="guide-anim"><div id="guide-fig"></div><button class="btn small play" data-act="anim-toggle" aria-label="Pause or play the animation">Pause</button></div>` : ""}${body}</div>
+    <div class="guide">${builtIn ? `<div class="guide-video"><video id="guide-video" src="videos/${esc(id)}.mp4" autoplay muted loop playsinline preload="metadata" aria-label="${esc(e.name)} demonstration video"></video><div class="video-soon" id="video-soon" hidden><b>Video demo coming soon</b><span>A coach-recorded video of this exercise is on the way. Follow the steps below until then.</span></div></div>` : ""}${body}</div>
   </div></div>`;
 }
 function renderSheet() {
   const host = $("#sheet"); const p = S.ui.picker;
   if (S.ui.info) {
     host.innerHTML = renderInfo(S.ui.info);
-    const playing = window.LiftGuide.mount($("#guide-fig"), S.ui.info);
-    const pb = $('[data-act="anim-toggle"]'); if (pb) pb.textContent = playing ? "Pause" : "Play";
+    const v = $("#guide-video");
+    if (v) {
+      v.addEventListener("error", () => { v.hidden = true; const s = $("#video-soon"); if (s) s.hidden = false; }, { once: true });
+      v.addEventListener("loadeddata", () => v.play().catch(() => {}), { once: true });
+      v.addEventListener("click", () => (v.paused ? v.play().catch(() => {}) : v.pause()));
+    }
     return;
   }
   if (!p) { host.innerHTML = ""; return; }
@@ -1007,7 +1011,6 @@ document.addEventListener("click", async (ev) => {
     case "sheet-bg": case "sheet-close": if (S.ui.info) closeInfo(); else closePicker(); break;
     case "info": ev.stopPropagation(); openInfo(b.dataset.id); break;
     case "info-close": closeInfo(); break;
-    case "anim-toggle": { const fig = $("#guide-fig"); if (fig && fig._toggle) b.textContent = fig._toggle() ? "Pause" : "Play"; break; }
     case "pick-ex": { const t = S.ui.picker.target; closePicker(); addExerciseTo(t, b.dataset.id); render(); break; }
     case "pick-new": { const t = S.ui.picker.target; const id = addCustom(S.ui.picker.q.trim(), $("#ne-kind")?.value, $("#ne-muscle")?.value, $("#ne-track")?.value); closePicker(); addExerciseTo(t, id); render(); break; }
     case "r-open": S.ui.openRoutine = S.ui.openRoutine === b.dataset.r ? null : b.dataset.r; S.ui.openItem = null; S.ui.confirm = null; render(); break;
