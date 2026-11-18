@@ -205,6 +205,7 @@ nav.tabs a[aria-current="page"] { color: var(--accent); }
 /* ---- Standalone additions ---- */
 /* Exercise guide */
 .guide { overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
+.guide > * { flex-shrink: 0; } /* keep the video at full size inside the scrolling sheet */
 .guide-anim { background: var(--sunken); border-radius: 14px; padding: 10px; position: relative; }
 .guide-video { background: var(--sunken); border-radius: 14px; overflow: hidden; }
 .guide-video video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--sunken); }
